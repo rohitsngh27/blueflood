@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          ref: rohit/test-cli
+          ref: rohit/test-cli-backup
       - uses: actions/setup-java@v2
         with:
           distribution: 'adopt'
