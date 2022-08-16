@@ -40,7 +40,7 @@ jobs:
           pwd
           gpg --no-tty --batch --generate-key
           git checkout -b release/${RELEASE_VERSION}
-          mvn -B -X release:prepare -P release -DreleaseVersion=${RELEASE_VERSION} -Dmaven.wagon.httpconnectionManager.ttlSeconds=60 -Darguments="-DskipTests=true -Dmaven.test.skip=true -P skip-unit-tests -P skip-integration-tests -X"
+          mvn -B -X release:prepare -P release -DreleaseVersion=${RELEASE_VERSION} -Dmaven.wagon.httpconnectionManager.ttlSeconds=60 -Darguments="-DskipTests=true -Dmaven.test.skip=true -P skip-unit-tests -P skip-integration-tests -Pno-sonatype-oss-release -X"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create pull request
