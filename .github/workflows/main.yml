@@ -26,10 +26,6 @@ jobs:
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-      - name: Set version in env
-        run: |
-          version="${GITHUB_REF#refs/tags/}"
-          echo "RELEASE_VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
       - name: Generate changelog
         id: changelog
         uses: metcalfc/changelog-generator@v0.4.4
@@ -39,8 +35,8 @@ jobs:
         run: |
           pwd
           gpg --no-tty --batch --generate-key
-          git checkout -b release/${RELEASE_VERSION}
-          mvn -B -X release:prepare -P release -DreleaseVersion=${RELEASE_VERSION} -Dmaven.wagon.httpconnectionManager.ttlSeconds=60 -Darguments="-DskipTests=true -Dmaven.test.skip=true -P skip-unit-tests -P skip-integration-tests -Pno-sonatype-oss-release -X"
+          git checkout -b release/${{ github.event.inputs.version }}
+          mvn -B release:prepare -P release -DreleaseVersion=${{ github.event.inputs.version }} -Dmaven.wagon.httpconnectionManager.ttlSeconds=60 -Darguments="-DskipTests=true -Dmaven.test.skip=true -P skip-unit-tests -P skip-integration-tests"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create pull request
