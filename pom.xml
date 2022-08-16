@@ -242,19 +242,8 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-gpg-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>sign-artifacts</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>sign</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
+        <artifactId>maven-release-plugin</artifactId>
+        <version>3.0.0-M6</version>
       </plugin>
     </plugins>
   </build>
@@ -285,6 +274,26 @@
       <modules>
         <module>contrib/logstash-support</module>
       </modules>
+    </profile>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 
