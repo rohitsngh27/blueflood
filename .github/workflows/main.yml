@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          ref: master
+          ref: rohit/manual-release-flow-test
       - uses: actions/setup-java@v2
         with:
           distribution: 'temurin'
@@ -26,7 +26,6 @@ jobs:
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-          git remote -v
       - name: Set version in env
         run: |
           version="${GITHUB_REF#refs/tags/}"
