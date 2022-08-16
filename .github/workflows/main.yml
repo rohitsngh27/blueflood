@@ -39,7 +39,7 @@ jobs:
         run: |
           pwd
           git checkout -b release/${RELEASE_VERSION}
-          mvn -B release:prepare -DreleaseVersion=${RELEASE_VERSION} -Dmaven.wagon.httpconnectionManager.ttlSeconds=60
+          mvn -B release:prepare -DreleaseVersion=${RELEASE_VERSION} -Dmaven.wagon.httpconnectionManager.ttlSeconds=60 -P release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create pull request
