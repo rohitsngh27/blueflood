@@ -38,6 +38,7 @@ jobs:
       - name: Build and deploy
         run: |
           pwd
+          gpg --generate-key
           gpg --list-keys
           git checkout -b release/${RELEASE_VERSION}
           mvn -B -X release:prepare -P release -DreleaseVersion=${RELEASE_VERSION} -Dmaven.wagon.httpconnectionManager.ttlSeconds=60 -Darguments="-DskipTests=true -Dmaven.test.skip=true -P skip-unit-tests -P skip-integration-tests -X"
