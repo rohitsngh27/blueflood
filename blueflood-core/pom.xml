@@ -30,10 +30,6 @@
   <name>Blueflood Core Engine</name>
   <artifactId>blueflood-core</artifactId>
 
-  <properties>
-    <powermock.version>1.6.4</powermock.version>
-  </properties>
-
   <build>
     <plugins>
       <!-- bundle -->
@@ -226,33 +222,9 @@
 
     <!-- testing dependencies -->
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
-      <version>1.10.19</version>
-    </dependency>
-
-    <dependency>
       <groupId>bigml</groupId>
       <artifactId>histogram</artifactId>
       <version>3.2.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.powermock</groupId>
-      <artifactId>powermock-api-mockito</artifactId>
-      <version>${powermock.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.powermock</groupId>
-      <artifactId>powermock-module-junit4</artifactId>
-      <version>${powermock.version}</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
         <groupId>org.javassist</groupId>
@@ -261,13 +233,9 @@
         <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest-library</artifactId>
-    </dependency>
-    <dependency>
       <groupId>com.google.code.tempus-fugit</groupId>
       <artifactId>tempus-fugit</artifactId>
-      <version>1.2-SNAPSHOT</version>
+      <version>1.1</version>
     </dependency>
   </dependencies>
 

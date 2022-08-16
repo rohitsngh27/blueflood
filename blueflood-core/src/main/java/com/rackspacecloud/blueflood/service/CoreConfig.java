@@ -59,6 +59,40 @@ public enum CoreConfig implements ConfigDefaults {
     MAX_ROLLUP_READ_THREADS("20"),
     MAX_ROLLUP_WRITE_THREADS("5"),
 
+    // Discovery refers to indexing the details of locators so that they're easily searchable. Discovery modules
+    // implement specific discovery mechanisms. Elasticsearch is an example of a discovery backend. Locators are indexed
+    // in Elasticsearch and retrieved later to fulfill query requests.
+    //
+    // To avoid overwhelming a backend service like Elasticsearch, in-memory caches keep track of details that have
+    // already been written. For any given time series identified by a unique locator, that time series only needs
+    // discovery data written one time, so after writing a locator, the fact that it's written is cached, and we don't
+    // write the same locator again. See the LOCATOR_CACHE_* and TOKEN_CACHE_* settings for configuring the
+    // discovery-related caches.
+    //
+    // Blueflood startup is a special case that has to be dealt with. At startup, the caches are empty, so Blueflood
+    // treats every locator it sees as new. This can easily lead to an excessive number of calls to a discovery backend
+    // like Elasticsearch. In addition to the caches, Blueflood has discovery throttling to help avoid this case. This
+    // throttling can be used to slow down discovery writes on ingestion. Slowing it down reduces overall impact on
+    // Elasticsearch performance. The tradeoff is that it slows the rate at which new locators are discovered, so they
+    // can't be queried immediately.
+
+    // Sets the maximum number of new locators to write to discovery backends per minute. This is a global limit that
+    // covers all tenants. It's not a fair throttle, meaning that if one tenant floods the system and maxes out the
+    // throttle, all other tenants will be throttled as well. As such, set this as high as you can without causing
+    // instability in your discovery backends. The configured number isn't precise. Ingestion requests are always fully
+    // processed, and throttling happens between requests.
+    //
+    // When setting the global throttle, be sure to take into account how many Blueflood nodes you have, as well as how
+    // many of them typically restart at the same time. This corresponds directly to the load Blueflood will put on
+    // discovery backends while the caches fill at startup. Effectively, this setting should be something like:
+    // (max acceptable backend writes) / (number of Blueflood nodes that can start/restart simultaneously)
+    DISCOVERY_MAX_NEW_LOCATORS_PER_MINUTE("50000"),
+    // Sets the maximum number of new locators to write to discovery backends per tenant per minute. This is a fair
+    // throttle that will throttle each tenant independently. Normally you'll set this significantly lower than
+    // DISCOVERY_MAX_NEW_LOCATORS_PER_MINUTE to give all tenants a fair chance of their metrics being processed for
+    // discovery. The global throttle overrides the per-tenant throttle. Even if a tenant hasn't reached its per-tenant
+    // limit, the global throttle can halt the tenant's discovery writes.
+    DISCOVERY_MAX_NEW_LOCATORS_PER_MINUTE_PER_TENANT("500"),
     DISCOVERY_WRITER_MIN_THREADS("5"),
     DISCOVERY_WRITER_MAX_THREADS("50"),
 
@@ -125,6 +159,7 @@ public enum CoreConfig implements ConfigDefaults {
     GRAPHITE_HOST(""),
     GRAPHITE_PORT("2003"),
     GRAPHITE_PREFIX("unconfiguredNode.metrics."),
+    GRAPHITE_REPORT_PERIOD_SECONDS("30"),
 
     INGEST_MODE("true"),
     ROLLUP_MODE("true"),
@@ -134,11 +169,29 @@ public enum CoreConfig implements ConfigDefaults {
 
     METRIC_BATCH_SIZE("100"),
 
-    // The metrics batch writer uses a cache to determine if it's updated various marker "layers" with a metric
-    // recently. This setting tunes write concurrency of the cache.
-    // IMPORTANT: All threads writing to the database contend for access to this cache. Setting the concurrency too low
-    // will impact metric writing throughput.
+    // The locator cache is a local, in-memory cache that keeps track of locators that have been inserted into Cassandra
+    // and Elasticsearch for various tracking purposes, like marking a delayed locator dirty for rollup or indexing a
+    // locator and tokens for later querying. The cache is used to avoid unnecessary writes to these remote systems.
+
+    // This setting tunes the concurrency of the locator cache. All threads writing to the database contend for access
+    // to this cache. Setting the concurrency too low will impact metric writing throughput.
     LOCATOR_CACHE_CONCURRENCY("16"),
+    // Sets the length of time a locator is kept in the cache after it's written or last accessed. Any given locator
+    // will typically be seen at regular intervals in a production setting, but load balancing can spread occurrences of
+    // a locator across multiple Blueflood nodes. This setting should account for the combination of both. For instance,
+    // if data points for a locator arrive every minute and there are six Blueflood nodes, setting this any lower than 7
+    // is virtually guaranteed to expire cache entries too early. In reality, it's probably necessary to set it
+    // significantly higher due to other factors affecting the distribution of locators around nodes.
+    LOCATOR_CACHE_TTL_MINUTES("60"),
+    // Sets the length of time a delayed locator is kept in the cache. This guards against excessive writes to the
+    // "delayed locator" column family in cassandra. Note that both the locator and the slot are taken into account
+    // here, so a single locator could account for multiple entries in this portion of the cache.
+    LOCATOR_CACHE_DELAYED_TTL_SECONDS("30"),
+
+    // The token cache is similar in use to the locator cache, described previously. When
+    // ENABLE_TOKEN_SEARCH_IMPROVEMENTS is turned on, both the locator cache and the token cache are used to avoid
+    // unnecessary writes to Elasticsearch. The token cache specifically caches the non-leaf tokens of a locator.
+    TOKEN_CACHE_TTL_MINUTES("60"),
 
     CASSANDRA_REQUEST_TIMEOUT("10000"),
     // set <= 0 to not retry

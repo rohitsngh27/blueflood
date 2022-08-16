@@ -1,5 +1,6 @@
 package com.rackspacecloud.blueflood.io;
 
+import com.codahale.metrics.Counter;
 import com.google.common.annotations.VisibleForTesting;
 import com.rackspacecloud.blueflood.service.Configuration;
 import com.rackspacecloud.blueflood.service.CoreConfig;
@@ -10,7 +11,9 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.*;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -24,6 +27,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 
+import static com.rackspacecloud.blueflood.utils.Metrics.counter;
+import static com.rackspacecloud.blueflood.utils.Metrics.registerGauge;
 import static java.util.stream.Collectors.joining;
 
 public class ElasticsearchRestHelper {
@@ -35,9 +40,26 @@ public class ElasticsearchRestHelper {
     private int numberOfElasticsearchEndpoints;
     private int MAX_CALL_COUNT = 10;
     private int MAX_RESULT_LIMIT = Configuration.getInstance().getIntegerProperty(CoreConfig.MAX_DISCOVERY_RESULT_SIZE);
+    private static final Header defaultHttpHeaders[] = {
+            new BasicHeader("Accept", "application/json"),
+            new BasicHeader("Content-Type", "application/json")
+    };
+    private Map<String,Counter> errorCounters = new HashMap<String, Counter>() {{
+       put("refreshIndex", counter(getClass(), "refreshIndex Error"));
+       put("fetchEvents", counter(getClass(), "fetchEvents Error"));
+       put("fetchTokenDocuments", counter(getClass(), "fetchTokenDocuments Error"));
+       put("fetchDocuments", counter(getClass(), "fetchDocuments Error"));
+       put("index", counter(getClass(), "index Error"));
+    }};
 
+    private static final ElasticsearchRestHelper INSTANCE = new ElasticsearchRestHelper();
+
+    /**
+     * Gets an instance of the ES rest helper for use in main source.
+     * @return
+     */
     public static ElasticsearchRestHelper getInstance() {
-        return new ElasticsearchRestHelper();
+        return INSTANCE;
     }
 
     private ElasticsearchRestHelper(){
@@ -52,6 +74,17 @@ public class ElasticsearchRestHelper {
         pool.setDefaultMaxPerRoute(maxThreadsPerRoute);
         pool.setMaxTotal(endpoints.length * maxThreadsPerRoute);
         this.closeableHttpClient = HttpClients.custom().setConnectionManager(pool).build();
+        this.initPoolSizeMetrics();
+    }
+
+    private void initPoolSizeMetrics() {
+        try {
+            registerGauge(ElasticsearchRestHelper.class, () -> pool.getTotalStats().getAvailable(), "Available Connections");
+            registerGauge(ElasticsearchRestHelper.class, () -> pool.getTotalStats().getPending(), "Pending Connections");
+            registerGauge(ElasticsearchRestHelper.class, () -> pool.getTotalStats().getLeased(), "Leased Connections");
+        } catch (Exception ex) {
+            logger.error("Error in registering HTTP Pool connection metrics", ex);
+        }
     }
 
     private String getNextBaseUrl(){
@@ -75,51 +108,11 @@ public class ElasticsearchRestHelper {
     }
 
     public String fetchEvents(String tenantId, Map<String, List<String>> query) throws IOException {
-        String tempUrl = String.format("%s/%s/%s/_search?routing=%s&size=%d", getNextBaseUrl(),
-                EventElasticSearchIO.EVENT_INDEX, EventElasticSearchIO.ES_TYPE, tenantId, MAX_RESULT_LIMIT);
+        String url = String.format("%s/%s/_search?routing=%s&size=%d", EventElasticSearchIO.EVENT_INDEX,
+                EventElasticSearchIO.ES_TYPE, tenantId, MAX_RESULT_LIMIT);
 
         String queryDslString = getDslString(tenantId, query);
-        HttpEntity httpEntity = new NStringEntity(queryDslString, ContentType.APPLICATION_JSON);
-
-        Queue<String> callQ = new LinkedList<>();
-        callQ.add(tempUrl);
-        int callCount = 0;
-        while(!callQ.isEmpty() && callCount < MAX_CALL_COUNT) {
-            callCount++;
-            String url = callQ.remove();
-            logger.info("Using url [{}]", url);
-
-            HttpPost httpPost = new HttpPost(url);
-            httpPost.setHeaders(getHeaders());
-
-            CloseableHttpResponse response = null;
-
-            try {
-                httpPost.setEntity(httpEntity);
-                response = closeableHttpClient.execute(httpPost);
-                String str = EntityUtils.toString(response.getEntity());
-                EntityUtils.consume(response.getEntity());
-                return str;
-            } catch (Exception e) {
-                if(response == null){
-                    logger.error("fetchEvents failed with message: {}", e.getMessage());
-                    url = String.format("%s/%s/%s/_search?routing=%s&size=%d", getNextBaseUrl(),
-                            EventElasticSearchIO.EVENT_INDEX, EventElasticSearchIO.ES_TYPE,
-                            tenantId, MAX_RESULT_LIMIT);
-                    callQ.add(url);
-                }
-                else {
-                    logger.error("fetchEvents failed with status code: {} and exception message: {}",
-                            response.getStatusLine().getStatusCode(), e.getMessage());
-                }
-            } finally {
-                if(response != null) {
-                    response.close();
-                }
-            }
-        }
-
-        return "";
+        return executePost("%s/"+url, queryDslString, "fetchEvents").response;
     }
 
     private String getDslString(String tenantId, Map<String, List<String>> query) {
@@ -187,7 +180,7 @@ public class ElasticsearchRestHelper {
         String temp = String.format("%s/_search?routing=%s&size=%d", multiIndexString, tenantId, MAX_RESULT_LIMIT);
         String urlFormat = "%s/" + temp;
 
-        return fetchDocs(queryDslString, urlFormat);
+        return executePost(urlFormat, queryDslString, "fetchTokenDocuments").response;
     }
 
     public String fetchDocuments(String indexName, String documentType, String tenantId, String queryDslString) throws IOException {
@@ -196,51 +189,7 @@ public class ElasticsearchRestHelper {
                 indexName, documentType, tenantId, MAX_RESULT_LIMIT);
         String urlFormat = "%s/" + temp;
 
-        return fetchDocs(queryDslString, urlFormat);
-    }
-
-    private String fetchDocs(String queryDslString, String urlFormat) throws IOException {
-        String tempUrl = String.format(urlFormat, getNextBaseUrl());
-
-        Queue<String> callQ = new LinkedList<>();
-        callQ.add(tempUrl);
-        int callCount = 0;
-        while(!callQ.isEmpty() && callCount < MAX_CALL_COUNT) {
-            callCount++;
-            String url = callQ.remove();
-
-            logger.debug("Using url [{}]", url);
-            HttpPost httpPost = new HttpPost(url);
-            httpPost.setHeaders(getHeaders());
-            HttpEntity httpEntity = new NStringEntity(queryDslString, ContentType.APPLICATION_JSON);
-            httpPost.setEntity(httpEntity);
-
-            CloseableHttpResponse response = null;
-
-            try {
-                response = closeableHttpClient.execute(httpPost);
-                HttpEntity entity = response.getEntity();
-                String str = EntityUtils.toString(entity);
-                EntityUtils.consume(entity);
-                return str;
-            } catch (Exception e) {
-                if(response == null){
-                    logger.error("fetchDocs failed with message: {}", e.getMessage());
-                    url = String.format(urlFormat, getNextBaseUrl());
-                    callQ.add(url);
-                }
-                else {
-                    logger.error("fetch failed with status code: {} and exception message: {}",
-                            response.getStatusLine().getStatusCode(), e.getMessage());
-                }
-            } finally {
-                if(response != null) {
-                    response.close();
-                }
-            }
-        }
-
-        return "";
+        return executePost(urlFormat, queryDslString, "fetchDocuments").response;
     }
 
     private String getQueryDslString(String tenantId, List<String> queries){
@@ -482,59 +431,10 @@ public class ElasticsearchRestHelper {
 
     //If index() fails for whatever reason, it always throws IOException because indexing failed for Elasticsearch.
     public void index(final String urlFormat, final String bulkString) throws IOException {
-        String tempUrl = String.format(urlFormat, getNextBaseUrl());
-        HttpEntity entity = new NStringEntity(bulkString, ContentType.APPLICATION_JSON);
-        int statusCode = 0;
-
-        /*
-        Here I am using Queue to keep a round-robin selection of next base url. If current base URL fails for
-        whatever reason (with response == null), then in catch block, I am enqueueing the next base URL so that
-        in next iteration call picks up the new URL. If URL works, queue will be empty and loop will break out.
-        */
-        Queue<String> callQ = new LinkedList<>();
-        callQ.add(tempUrl);
-        int callCount = 0;
-        while(!callQ.isEmpty() && callCount < MAX_CALL_COUNT) {
-            callCount++;
-            String url = callQ.remove();
-            logger.debug("Using url [{}]", url);
-            HttpPost httpPost = new HttpPost(url);
-            httpPost.setHeaders(getHeaders());
-            httpPost.setEntity(entity);
-
-            CloseableHttpResponse response = null;
-
-            try {
-                logger.debug("ElasticsearchRestHelper.index Thread name in use: [{}]", Thread.currentThread().getName());
-                response = closeableHttpClient.execute(httpPost);
-
-                statusCode = response.getStatusLine().getStatusCode();
-                String str = EntityUtils.toString(response.getEntity());
-                EntityUtils.consume(response.getEntity());
-
-                if (statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED) {
-                    logger.error("index method failed with status code: {} and error: {}", statusCode, str);
-                }
-            }
-            catch (Exception e) {
-                if(response == null){
-                    logger.error("index method failed with message: {}", e.getMessage());
-                    url = String.format(urlFormat, getNextBaseUrl());
-                    callQ.add(url);
-                }
-                else {
-                    logger.error("index method failed with status code: {} and exception message: {}",
-                            statusCode, e.getMessage());
-                }
-            } finally {
-                if(response != null) {
-                    response.close();
-                }
-            }
+        ExecuteResponse response = executePost(urlFormat, bulkString, "index");
+        if(response.statusCode != HttpStatus.SC_OK && response.statusCode != HttpStatus.SC_CREATED) {
+            throw new IOException("Elasticsearch indexing failed with status code: [" + response.statusCode + "]");
         }
-
-        if(statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED)
-            throw new IOException("Elasticsearch indexing failed with status code: [" + statusCode + "]");
     }
 
     private String getTermQueryString(String key, String value){
@@ -568,19 +468,6 @@ public class ElasticsearchRestHelper {
                 mustValueString, shouldValueString);
     }
 
-    private Header[] getHeaders(){
-        Map<String, String> headersMap = new HashMap<>();
-        headersMap.put("Accept", "application/json");
-        headersMap.put("Content-Type", "application/json");
-
-        Header[] headers = new Header[headersMap.size()];
-        int i = 0;
-        for(String key : headersMap.keySet()){
-            headers[i++] = new BasicHeader(key, headersMap.get(key));
-        }
-        return headers;
-    }
-
     @VisibleForTesting
     public int refreshIndex(String indexName) throws IOException {
         String url = String.format("http://%s/%s/_refresh", baseUrlArray[0], indexName);
@@ -589,6 +476,7 @@ public class ElasticsearchRestHelper {
         try {
             response = closeableHttpClient.execute(httpGet);
         } catch (IOException e) {
+            incrementErrorCounter("refreshIndex");
             logger.error("Refresh for index {} failed with status code: {} and exception message: {}",
                     indexName, response.getStatusLine().getStatusCode(), e.getMessage());
         }
@@ -597,5 +485,80 @@ public class ElasticsearchRestHelper {
         }
 
         return response.getStatusLine().getStatusCode();
+    }
+
+    /*
+        Here I am using Queue to keep a round-robin selection of next base url. If current base URL fails for
+        whatever reason (with response == null), then in catch block, I am enqueueing the next base URL so that
+        in next iteration call picks up the new URL. If URL works, queue will be empty and loop will break out.
+    */
+    private ExecuteResponse executePost(String urlFormat, String queryDslString, String methodName) throws IOException {
+        String tempUrl = String.format(urlFormat, getNextBaseUrl());
+        Queue<String> callQ = new LinkedList<>();
+        callQ.add(tempUrl);
+        int callCount = 0;
+        int responseCode = 0;
+        while (!callQ.isEmpty() && callCount < MAX_CALL_COUNT) {
+            callCount++;
+            String url = callQ.remove();
+
+            logger.debug("Using url [{}]", url);
+            HttpPost httpPost = new HttpPost(url);
+            httpPost.setHeaders(defaultHttpHeaders);
+            HttpEntity httpEntity = new NStringEntity(queryDslString, ContentType.APPLICATION_JSON);
+            httpPost.setEntity(httpEntity);
+            CloseableHttpResponse response = null;
+
+            try {
+                response = closeableHttpClient.execute(httpPost);
+                responseCode = response.getStatusLine().getStatusCode();
+                HttpEntity entity = response.getEntity();
+                String str = EntityUtils.toString(entity);
+                EntityUtils.consume(entity);
+                return new ExecuteResponse(str, responseCode);
+            } catch (Exception e) {
+                incrementErrorCounter(methodName);
+                if (response == null) {
+                    logger.error("{} failed with message: {}", methodName, e.getMessage());
+                    url = String.format(urlFormat, getNextBaseUrl());
+                    callQ.add(url);
+                } else {
+                    logger.error("{} failed with status code: {} and exception message: {}", methodName,
+                            response.getStatusLine().getStatusCode(), e.getMessage());
+                }
+            } finally {
+                if (response != null) {
+                    response.close();
+                }
+            }
+        }
+
+        return new ExecuteResponse("", responseCode);
+    }
+
+    private void incrementErrorCounter(String methodName) {
+        Counter counter = errorCounters.get(methodName);
+        if(counter != null) {
+            counter.inc();
+        } else {
+            // Forgot to declare the metric? Register on demand
+            counter(getClass(), String.format("%s Error", methodName)).inc();
+        }
+    }
+
+
+    private static class ExecuteResponse {
+        private String response;
+        private int statusCode;
+
+        public ExecuteResponse(String response, int statusCode) {
+            this.response = response;
+            this.statusCode = statusCode;
+        }
+    }
+
+    @VisibleForTesting
+    public Map<String,Counter> getErrorCounters() {
+        return errorCounters;
     }
 }
