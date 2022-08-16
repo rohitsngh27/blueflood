@@ -39,7 +39,7 @@ jobs:
         run: |
           pwd
           git checkout -b release/${RELEASE_VERSION}
-          mvn -B release:prepare -P release -DreleaseVersion=${RELEASE_VERSION} -Dmaven.wagon.httpconnectionManager.ttlSeconds=60 -Darguments="-DskipTests=true -Dmaven.test.skip=true -P skip-unit-tests -P skip-integration-tests"
+          mvn -B release:prepare -DreleaseVersion=${RELEASE_VERSION} -Dmaven.wagon.httpconnectionManager.ttlSeconds=60 -Darguments="-DskipTests=true -Dmaven.test.skip=true -P skip-unit-tests -P skip-integration-tests"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create pull request
