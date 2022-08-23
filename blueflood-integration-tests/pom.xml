@@ -143,6 +143,7 @@
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>2.19.1</version>
         <configuration>
+          <reuseForks>false</reuseForks>
           <systemPropertyVariables>
             <!-- Load properties for the IT's from the module-local properties file -->
             <blueflood.config>file:${basedir}/src/integration-test/resources/blueflood.properties</blueflood.config>
