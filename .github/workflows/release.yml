@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          ref: master
+          ref: rohit/debug-failed-ITs
       - uses: actions/setup-java@v2
         with:
           distribution: 'temurin'
