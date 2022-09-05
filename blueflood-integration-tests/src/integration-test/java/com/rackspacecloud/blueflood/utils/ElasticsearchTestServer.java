@@ -52,7 +52,7 @@ public class ElasticsearchTestServer {
      * Elasticsearch and change to new testing mechanisms. It's useful to declare here so that you can easily test
      * against different variants in a dev environment.
      */
-    private static final EsInitMethod esInitMethod = EsInitMethod.TLRX;
+    private static final EsInitMethod esInitMethod = EsInitMethod.TEST_CONTAINERS;
 
     private ElasticsearchContainer elasticsearchContainer;
     private EsSetup esSetup;
