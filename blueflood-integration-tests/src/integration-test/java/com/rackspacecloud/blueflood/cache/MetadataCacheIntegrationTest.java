@@ -38,6 +38,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -92,7 +93,7 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         Assert.assertNull(cache1.get(loc1, "foo"));
     }
 
-    @Test
+    @Test @Ignore
     public void testCollisions() throws Exception {
         Locator loc1 = Locator.createLocatorFromPathComponents( getRandomTenantId(), "ac76PeGPSR", "entZ4MYd1W", "chJ0fvB5Ao", "mzord", "truncated"); // put unit of bytes
         Locator loc2 = Locator.createLocatorFromPathComponents( getRandomTenantId(), "acTmPLSgfv", "enLctkAMeN", "chQwBe5YiE", "mzdfw", "cert_end_in"); // put type of I
