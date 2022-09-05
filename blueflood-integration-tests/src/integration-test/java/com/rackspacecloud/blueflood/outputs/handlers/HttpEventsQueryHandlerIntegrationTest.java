@@ -53,7 +53,7 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
     public void testHttpEventsQueryHandler_HappyCase() throws Exception {
         parameterMap = new HashMap<String, String>();
         parameterMap.put(Event.fromParameterName, String.valueOf(baseMillis - 86400000));
-        parameterMap.put(Event.untilParameterName, String.valueOf(baseMillis + (86400000*10)));
+        parameterMap.put(Event.untilParameterName, String.valueOf(Calendar.getInstance().getTimeInMillis()));
         HttpGet get = new HttpGet(getQueryEventsURI(tenantId));
         HttpResponse response = client.execute(get);
 
