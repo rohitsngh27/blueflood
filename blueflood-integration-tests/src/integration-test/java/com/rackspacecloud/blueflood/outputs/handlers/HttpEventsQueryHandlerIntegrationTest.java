@@ -18,6 +18,9 @@ package com.rackspacecloud.blueflood.outputs.handlers;
 
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import com.rackspacecloud.blueflood.types.Event;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.Calendar;
 import java.util.HashMap;
 import org.apache.http.HttpEntity;
@@ -53,7 +56,8 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
     public void testHttpEventsQueryHandler_HappyCase() throws Exception {
         parameterMap = new HashMap<String, String>();
         parameterMap.put(Event.fromParameterName, String.valueOf(baseMillis - 86400000));
-        parameterMap.put(Event.untilParameterName, String.valueOf(Calendar.getInstance().getTimeInMillis()));
+        parameterMap.put(Event.untilParameterName, String.valueOf(Calendar.getInstance().getTimeInMillis()+ Instant.now().plus(1,
+            ChronoUnit.DAYS).toEpochMilli()));
         HttpGet get = new HttpGet(getQueryEventsURI(tenantId));
         HttpResponse response = client.execute(get);
 
