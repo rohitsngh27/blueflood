@@ -14,5 +14,6 @@ jobs:
           java-version: '8'
           cache: 'maven'
       - run: |
+          mvn clean install -P skip-unit-tests,skip-integration-tests
           cd blueflood-integration-tests
           mvn clean install
