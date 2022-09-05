@@ -2,8 +2,7 @@
 name: Unit tests
 on:
   push:
-    branches: [master]
-  pull_request:
+    branches: [rohit/debug-failed-ITs]
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -14,4 +13,6 @@ jobs:
           distribution: 'temurin'
           java-version: '8'
           cache: 'maven'
-      - run: mvn test
+      - run: |
+          cd blueflood-integration-tests
+          mvn clean install
