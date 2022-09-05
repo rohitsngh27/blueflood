@@ -26,7 +26,6 @@ import com.google.gson.JsonParser;
 import com.rackspacecloud.blueflood.http.HttpIntegrationTestBase;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.http.HttpResponse;
@@ -55,7 +54,7 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
         assertEquals( "Should get status 200 from ingestion server for POST", 200, response.getStatusLine().getStatusCode() );
         EntityUtils.consume(response.getEntity());
 
-        final long end = Instant.now().plusSeconds(2000).toEpochMilli();
+        final long end = System.currentTimeMillis() + TIME_DIFF;
         JsonObject responseObject = getMultiMetricRetry( tenant_id, start, end, "200", "FULL", "",
                 "['3333333.G1s" + postfix + "','3333333.G10s" + postfix + "']", 2 );
 
