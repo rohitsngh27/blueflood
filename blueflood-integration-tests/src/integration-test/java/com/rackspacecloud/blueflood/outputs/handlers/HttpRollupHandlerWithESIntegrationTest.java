@@ -119,7 +119,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
         }
 
         AbstractMetricsRW preaggregatedRW = IOContainer.fromConfig().getPreAggregatedMetricsRW();
-        metric = writeGaugeMetric(preaggregatedRW, "gauge_metric2", "423432");
+        metric = writeGaugeMetric(preaggregatedRW, "gauge_metric2", "333333");
         MetadataCache.getInstance().put(metric.getLocator(), MetricMetadata.ROLLUP_TYPE.name().toLowerCase(), RollupType.GAUGE.toString());
 
         granToPoints.put(Granularity.FULL, 1440);
@@ -237,7 +237,7 @@ public class HttpRollupHandlerWithESIntegrationTest extends IntegrationTestBase 
     public static void tearDownClass() throws Exception{
         Configuration.getInstance().setProperty(CoreConfig.DISCOVERY_MODULES.name(), "");
         Configuration.getInstance().setProperty(CoreConfig.USE_ES_FOR_UNITS.name(), "false");
-
+        EsSetup.deleteAll();
         if (esSetup != null) {
             esSetup.terminate();
         }

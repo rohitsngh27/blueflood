@@ -16,6 +16,7 @@
 
 package com.rackspacecloud.blueflood.io;
 
+import com.github.tlrx.elasticsearch.test.EsSetup;
 import com.rackspacecloud.blueflood.service.ElasticIOConfig;
 import com.rackspacecloud.blueflood.types.IMetric;
 import com.rackspacecloud.blueflood.types.Locator;
@@ -119,6 +120,7 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
         for (String typeToEmpty : typesToEmpty)
             deleteAllDocuments(typeToEmpty);
+        EsSetup.deleteAll();
     }
 
     @AfterClass
