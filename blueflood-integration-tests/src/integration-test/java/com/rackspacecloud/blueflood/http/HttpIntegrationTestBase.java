@@ -57,6 +57,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
@@ -120,7 +121,7 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
     }
 
     @AfterClass
-    public static void shutdown() throws IOException {
+    public static void shutdown() throws IOException, URISyntaxException {
 
         Configuration.getInstance().init();
 
@@ -136,6 +137,16 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
             httpIngestionService.shutdownService();
         }
 
+            URIBuilder builder = new URIBuilder().setScheme("http").setHost("127.0.0.1").setPort(9200).setPath("/metric_metadata");
+            HttpDelete delete = new HttpDelete(builder.build());
+            HttpResponse response = client.execute(delete);
+            if(response.getStatusLine().getStatusCode() != 200)
+            {
+                System.out.println("Couldn't delete 'events' index after running tests.");
+            }
+            else {
+                System.out.println("Successfully deleted 'metric_metadata' index after running tests.");
+            }
         if (esSetup != null) {
             esSetup.terminate();
         }
