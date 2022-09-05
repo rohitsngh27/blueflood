@@ -39,7 +39,6 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
     private final String tenant_id = "333333";
 
     @Test
-    @Ignore
     // Ignored this testcase because it is interfering with HttpMultiRollupsQueryHandlerIntegrationTest.testHttpMultiRollupsQueryHandler test which makes both of the testcases run result to fail.
     // This behavior is intermittent because on newer OS it is failing but on older version these are working fine.
     public void testHttpRollupsQueryHandler() throws Exception {
