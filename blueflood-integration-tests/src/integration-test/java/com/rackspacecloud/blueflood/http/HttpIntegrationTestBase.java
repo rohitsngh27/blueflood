@@ -136,8 +136,6 @@ public class HttpIntegrationTestBase extends IntegrationTestBase {
             httpIngestionService.shutdownService();
         }
 
-        EsSetup.deleteAll();
-
         if (esSetup != null) {
             esSetup.terminate();
         }

@@ -120,7 +120,6 @@ public class ElasticIOIntegrationTest extends BaseElasticTest {
 
         for (String typeToEmpty : typesToEmpty)
             deleteAllDocuments(typeToEmpty);
-        EsSetup.deleteAll();
     }
 
     @AfterClass
