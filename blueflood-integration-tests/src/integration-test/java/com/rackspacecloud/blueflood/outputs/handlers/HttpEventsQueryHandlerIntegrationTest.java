@@ -54,10 +54,14 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
         parameterMap = new HashMap<String, String>();
         parameterMap.put(Event.fromParameterName, String.valueOf(baseMillis - 86400000));
         parameterMap.put(Event.untilParameterName, String.valueOf(baseMillis + (86400000*3)));
-        HttpGet get = new HttpGet(getQueryEventsURI(tenantId));
-        HttpResponse response = client.execute(get);
-
-        String responseString = EntityUtils.toString(response.getEntity());
+        HttpResponse response = null;
+        String responseString = null;
+        for (int i=0;i<5;i++) {
+            HttpGet get = new HttpGet(getQueryEventsURI(tenantId));
+            response = client.execute(get);
+            responseString = EntityUtils.toString(response.getEntity());
+            if (!responseString.equals("[]")) break;
+        }
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
         Assert.assertFalse(responseString.equals("[]"));
         assertResponseHeaderAllowOrigin(response);
