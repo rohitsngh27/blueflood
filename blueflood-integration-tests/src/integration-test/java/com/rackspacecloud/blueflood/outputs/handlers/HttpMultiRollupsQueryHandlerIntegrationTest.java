@@ -141,8 +141,8 @@ public class HttpMultiRollupsQueryHandlerIntegrationTest extends HttpIntegration
 
             JsonParser jsonParser = new JsonParser();
             JsonObject responseObject = jsonParser.parse( responseContent ).getAsJsonObject();
-
-            if( responseObject.getAsJsonArray( "metrics" ).size() == size )
+            JsonArray jsonArray = responseObject.getAsJsonArray("metrics").get(0).getAsJsonObject().getAsJsonArray("data");
+            if( responseObject.getAsJsonArray( "metrics" ).size() == size && jsonArray.size()!=0)
                 return responseObject;
 
             Thread.currentThread().sleep( 5000 );
