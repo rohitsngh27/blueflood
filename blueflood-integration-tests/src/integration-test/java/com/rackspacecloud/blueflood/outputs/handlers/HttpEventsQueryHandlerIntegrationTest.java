@@ -61,6 +61,7 @@ public class HttpEventsQueryHandlerIntegrationTest extends HttpIntegrationTestBa
             response = client.execute(get);
             responseString = EntityUtils.toString(response.getEntity());
             if (!responseString.equals("[]")) break;
+            Thread.sleep(1000);
             System.out.println("Retrying to get data");
         }
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
