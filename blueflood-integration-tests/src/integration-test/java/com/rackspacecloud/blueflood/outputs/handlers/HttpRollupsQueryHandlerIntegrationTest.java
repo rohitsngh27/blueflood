@@ -120,8 +120,6 @@ public class HttpRollupsQueryHandlerIntegrationTest extends HttpIntegrationTestB
             }
 
             System.out.println(String.format("Data for metric %s is not found, sleeping and retrying, payload: %s", metric_name, responseContent));
-            Thread.currentThread().sleep( 5000 );
-
         }
         return null;
     }

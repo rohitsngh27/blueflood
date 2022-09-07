@@ -378,9 +378,6 @@ public class MetadataCache extends AbstractJmxCache implements MetadataCacheMBea
         try {
             CacheKey cacheKey = new CacheKey(locator, key);
             Map<String, String> metadata = io.getAllValues(locator);
-            if(locator.getMetricName().contains("3333333.G1s") || locator.getMetricName().contains("3333333.G10s")) {
-                System.out.println("IO object is:"+io);
-            }
             if (metadata == null || metadata.isEmpty()) {
                 cache.put(cacheKey, NULL);
                 return NULL;
