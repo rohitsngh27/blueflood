@@ -93,7 +93,10 @@ public class MetadataCacheIntegrationTest extends IntegrationTestBase {
         Assert.assertNull(cache1.get(loc1, "foo"));
     }
 
-    @Test @Ignore
+    @Test
+    @Ignore
+    //Ignoring this test case as it does not assert anything and modifies the static instance of MetaDataCache
+    //TODO Add some logical implentation for this test case.
     public void testCollisions() throws Exception {
         Locator loc1 = Locator.createLocatorFromPathComponents( getRandomTenantId(), "ac76PeGPSR", "entZ4MYd1W", "chJ0fvB5Ao", "mzord", "truncated"); // put unit of bytes
         Locator loc2 = Locator.createLocatorFromPathComponents( getRandomTenantId(), "acTmPLSgfv", "enLctkAMeN", "chQwBe5YiE", "mzdfw", "cert_end_in"); // put type of I

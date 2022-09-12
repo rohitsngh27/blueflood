@@ -26,18 +26,24 @@ jobs:
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
+      - name: Generate changelog
+        id: changelog
+        uses: metcalfc/changelog-generator@v0.4.4
+        with:
+          myToken: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and deploy
         run: |
           pwd
+          git status
           git checkout -b release/${{ github.event.inputs.version }}
-          mvn -B release:prepare -DreleaseVersion=${{ github.event.inputs.version }} -Dmaven.wagon.httpconnectionManager.ttlSeconds=60
+          mvn -B release:prepare -DreleaseVersion=${{ github.event.inputs.version }} -Dmaven.wagon.httpconnectionManager.ttlSeconds=60 -Darguments="-DskipTests=true -Dmaven.test.skip=true -P skip-unit-tests -P skip-integration-tests"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create pull request
         uses: repo-sync/pull-request@v2
         with:
           source_branch: "release/${{ github.event.inputs.version }}"
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.RELEASE_PR_WORKFLOW_TOKEN }}
       - name: Create a new github release
         uses: ncipollo/release-action@v1
         with:
