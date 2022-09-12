@@ -36,6 +36,10 @@ jobs:
           pwd
           git status
           git checkout -b release/${{ github.event.inputs.version }}
+          echo "${{ steps.changelog.outputs.changelog }}" > CHANGELOG.md
+          git add CHANGELOG.md
+          git commit -m "Adding changelogs"
+          git push release/${{ github.event.inputs.version }}
           mvn -B release:prepare -DreleaseVersion=${{ github.event.inputs.version }} -Dmaven.wagon.httpconnectionManager.ttlSeconds=60 -Darguments="-DskipTests=true -Dmaven.test.skip=true -P skip-unit-tests -P skip-integration-tests"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -43,7 +47,7 @@ jobs:
         uses: repo-sync/pull-request@v2
         with:
           source_branch: "release/${{ github.event.inputs.version }}"
-          github_token: ${{ secrets.RELEASE_PR_WORKFLOW_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Create a new github release
         uses: ncipollo/release-action@v1
         with:
