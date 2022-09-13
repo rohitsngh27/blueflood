@@ -1,3 +1,7 @@
+* [](http://github.com/rohitsngh27/blueflood/commit/e1bc9aba506fd3cbdcbfafa3d08d7f9a5fd2009a) - Adding changelogs
+* [](http://github.com/rohitsngh27/blueflood/commit/ff01300de3f46912e0ada5cc2a10aaa0ade0dd45) - [maven-release-plugin] prepare release blueflood-3.7.4
+* [](http://github.com/rohitsngh27/blueflood/commit/1213c693662bb3346dc21d7b2afb5951bbf73993) - Update release.yml
+
 # CHANGES
 
 ## IN PROGRESS
