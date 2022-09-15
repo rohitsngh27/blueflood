@@ -26,13 +26,12 @@ jobs:
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-      - name: Generate changelog
-        id: changelog
-        uses: metcalfc/changelog-generator@v0.4.4
+      - name: Run Changelog CI
+        uses: saadmk11/changelog-ci@v1.0.0
         with:
-          myToken: ${{ secrets.GITHUB_TOKEN }}
-          head-ref: 'blueflood-${{ github.event.inputs.version }}'
-          base-ref: 'blueflood-2.9.9'
+          changelog_filename: CHANGELOG.md
+          release_version: blueflood-2.8.7
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and deploy
         run: |
           pwd
