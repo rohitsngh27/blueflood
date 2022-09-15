@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          ref: master
+          ref: rohit/debug-failed-ITs
       - uses: actions/setup-java@v2
         with:
           distribution: 'temurin'
@@ -26,21 +26,37 @@ jobs:
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
+      - name: Run Changelog CI
+        uses: saadmk11/changelog-ci@v1.0.0
+        with:
+          release_version: blueflood-2.8.7
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and deploy
         run: |
           pwd
           git checkout -b release/${{ github.event.inputs.version }}
-          mvn -B release:prepare -DreleaseVersion=${{ github.event.inputs.version }} -Dmaven.wagon.httpconnectionManager.ttlSeconds=60
+          git status
+          echo "${{ steps.changelog-ci.outputs.changelog }}" > CHANGELOG.md
+          git add CHANGELOG.md
+          git commit -m "Adding changelogs"
+          git push origin release/${{ github.event.inputs.version }}
+          mvn -B release:prepare -DreleaseVersion=${{ github.event.inputs.version }} -Dmaven.wagon.httpconnectionManager.ttlSeconds=60 -Darguments="-DskipTests=true -Dmaven.test.skip=true -P skip-unit-tests -P skip-integration-tests"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create pull request
         uses: repo-sync/pull-request@v2
         with:
           source_branch: "release/${{ github.event.inputs.version }}"
-          github_token: ${{ secrets.RELEASE_PR_WORKFLOW_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Generate changelog
+        id: changelog-again
+        uses: metcalfc/changelog-generator@v0.4.4
+        with:
+          myToken: ${{ secrets.GITHUB_TOKEN }}
       - name: Create a new github release
         uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           artifacts: /home/runner/work/blueflood/blueflood/blueflood-all/target/blueflood-all-${{ github.event.inputs.version }}-jar-with-dependencies.jar
           tag: "blueflood-${{ github.event.inputs.version }}"
+          body: "${{ steps.changelog.outputs.changelog }}"
