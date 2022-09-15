@@ -29,7 +29,6 @@ jobs:
       - name: Run Changelog CI
         uses: saadmk11/changelog-ci@v1.0.0
         with:
-          changelog_filename: CHANGELOG.md
           release_version: blueflood-2.8.7
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and deploy
@@ -37,6 +36,7 @@ jobs:
           pwd
           git checkout -b release/${{ github.event.inputs.version }}
           git status
+          echo "${{ steps.changelog-ci.outputs.changelog }}" > CHANGELOG.md
           git add CHANGELOG.md
           git commit -m "Adding changelogs"
           git push origin release/${{ github.event.inputs.version }}
