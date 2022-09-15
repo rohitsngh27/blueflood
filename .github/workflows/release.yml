@@ -37,10 +37,7 @@ jobs:
           git checkout -b release/${{ github.event.inputs.version }}
           git status
           echo "${{ steps.changelog.outputs.changelog }}" > CHANGELOG.md
-          cat CHANGES.md >> CHANGELOG.md
-          rm CHANGES.md
-          mv CHANGELOG.md  CHANGES.md
-          git add CHANGES.md
+          git add CHANGELOG.md
           git commit -m "Adding changelogs"
           git push origin release/${{ github.event.inputs.version }}
           mvn -B release:prepare -DreleaseVersion=${{ github.event.inputs.version }} -Dmaven.wagon.httpconnectionManager.ttlSeconds=60 -Darguments="-DskipTests=true -Dmaven.test.skip=true -P skip-unit-tests -P skip-integration-tests"
