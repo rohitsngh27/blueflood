@@ -24,7 +24,7 @@
   <artifactId>blueflood</artifactId>
   <name>Blueflood</name>
   <packaging>pom</packaging>
-  <version>2.1.1-SNAPSHOT</version>
+  <version>3.8.0</version>
   <modules>
     <module>blueflood-core</module>
     <module>blueflood-elasticsearch</module>
@@ -287,6 +287,7 @@
     <connection>scm:https://github.com/rohitsngh27/blueflood</connection>
     <developerConnection>scm:git:https://github.com/rohitsngh27/blueflood</developerConnection>
     <url>https://github.com/rohitsngh27/blueflood</url>
+    <tag>blueflood-3.8.0</tag>
   </scm>
 
   <developers>
